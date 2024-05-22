@@ -1,45 +1,42 @@
-import { Box, Flex, VStack } from "@chakra-ui/react";
+import { Box, Flex, VStack, useToast } from "@chakra-ui/react";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { SERVER_URL } from "../config/url";
+import axios from "axios";
+import { Question } from "../types/types";
 
 export const Route = createFileRoute("/")({
   component: HomeComponent,
 });
 
-const questionsData = [
-  {
-    id: "1",
-    title: "Question title 1",
-    content: "Questions content",
-    creator: {
-      username: "Bartoszeeek",
-    },
-  },
-  {
-    id: "2",
-    title: "Question title 2",
-    content: "Questions content",
-    creator: {
-      username: "Bartoszeeek",
-    },
-  },
-  {
-    id: "3",
-    title: "Question title 3",
-    content: "Questions content",
-    creator: {
-      username: "Bartoszeeek",
-    },
-  },
-];
-
 function HomeComponent() {
+  const [questionsData, setQuestionsData] = useState<Question[]>();
+  const toast = useToast();
+
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  const fetchQuestions = async () => {
+    try {
+      const result = await axios.get(`${SERVER_URL}/questions/`);
+
+      setQuestionsData(result.data);
+    } catch (e: unknown) {
+      toast({
+        status: "error",
+        description: JSON.stringify(e),
+      });
+    }
+  };
+
   return (
     <Flex mt={"60px"} direction={"column"} alignItems={"center"} mb={"100px"}>
       <Box fontWeight={"bold"} fontSize={"2xl"} mb={"20px"}>
         Q&A Knowledgebase
       </Box>
       <VStack spacing={"20px"}>
-        {questionsData.map((question) => (
+        {questionsData?.map((question) => (
           <Box
             w={"1000px"}
             borderRadius={"20px"}
@@ -50,12 +47,15 @@ function HomeComponent() {
             key={question.id}
           >
             <Box fontWeight={"bold"} fontSize={"2xl"} color={"gray.700"}>
-              {question.title}
+              {question.content}
             </Box>
-            <Box color={"gray.400"} mb={"20px"}>
+            <Box color={"gray.300"} fontWeight={"bold"} mt={"10px"}>
               {question.creator.username}
             </Box>
-            <Box minHeight={"200px"}>{question.content}</Box>
+            <Box color={"gray.300"} fontWeight={"bold"} mb={"10px"}>
+              {new Date(question.createdAt * 1000).toLocaleString()}
+            </Box>
+            {/* <Box minHeight={"200px"}>{question.content}</Box> */}
             <Link to={"/questions" + "/" + question.id}>
               Go to question {">>"}
             </Link>

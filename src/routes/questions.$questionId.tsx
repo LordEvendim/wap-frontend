@@ -1,5 +1,18 @@
-import { Box, Divider, Flex, VStack } from "@chakra-ui/react";
-import { createFileRoute } from "@tanstack/react-router";
+import {
+  Box,
+  Button,
+  Divider,
+  Flex,
+  Textarea,
+  VStack,
+  useToast,
+} from "@chakra-ui/react";
+import { createFileRoute, useParams } from "@tanstack/react-router";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { SERVER_URL } from "../config/url";
+import { Question } from "../types/types";
+import { useUser } from "../useUser";
 
 export const Route = createFileRoute("/questions/$questionId")({
   component: QuestionComponent,
@@ -8,33 +21,53 @@ export const Route = createFileRoute("/questions/$questionId")({
   },
 });
 
-const question = {
-  id: "1",
-  title: "Question title 1",
-  content: "Questions content",
-  creator: {
-    username: "Bartoszeeek",
-  },
-};
-
-const answersData = [
-  {
-    id: "1",
-    content: "Answer content",
-    creator: {
-      username: "Bartoszeeek",
-    },
-  },
-  {
-    id: "2",
-    content: "Answer content 2",
-    creator: {
-      username: "Bartoszeeek",
-    },
-  },
-];
-
 function QuestionComponent() {
+  const toast = useToast();
+  const { questionId } = useParams({ strict: false }) as { questionId: string };
+  const [questionData, setQuestionData] = useState<Question>();
+  const [answer, setAnswer] = useState<string>("");
+
+  console.log(questionId);
+
+  const fetchQuestion = async () => {
+    try {
+      const result = await axios.get(`${SERVER_URL}/questions/${questionId!}`);
+
+      console.log(result.data);
+
+      setQuestionData(result.data);
+    } catch (e: unknown) {
+      toast({
+        status: "error",
+        description: JSON.stringify(e),
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchQuestion();
+  }, []);
+
+  const postAnswer = async () => {
+    try {
+      await axios.post(`${SERVER_URL}/answers/`, {
+        content: answer,
+        creatorId: useUser.getState().userId,
+        parentQuestionId: questionId!,
+      });
+
+      toast({
+        status: "success",
+        description: "Answer added",
+      });
+    } catch (e: unknown) {
+      toast({
+        status: "error",
+        description: JSON.stringify(e),
+      });
+    }
+  };
+
   return (
     <Flex
       mt={"60px"}
@@ -43,12 +76,15 @@ function QuestionComponent() {
       w={"1000px"}
       mx={"auto"}
     >
-      <Box fontWeight={"bold"} fontSize={"2xl"} mb={"20px"}>
-        {question.title}
+      <Box fontWeight={"bold"} color={"gray.300"}>
+        {questionData &&
+          new Date(questionData.createdAt * 1000).toLocaleString()}
       </Box>
-      <Box minHeight={"200px"}>{question.content}</Box>
+      <Box fontWeight={"bold"} fontSize={"2xl"} mb={"20px"}>
+        {questionData?.content}
+      </Box>
       <Box color={"gray.400"} mb={"20px"}>
-        {question.creator.username}
+        {questionData?.creator.username}
       </Box>
       <Divider borderColor={"gray.400"} mt={"40px"} />
       <Box
@@ -61,23 +97,49 @@ function QuestionComponent() {
         Answers
       </Box>
       <VStack spacing={"20px"}>
-        {answersData.map((answer) => (
+        {questionData?.answers.map((answer) => (
           <Box
             w={"1000px"}
+            p={"20px"}
             borderRadius={"15px"}
             boxShadow={"md"}
-            p={"20px"}
             borderWidth={"1px"}
             borderColor={"gray.300"}
             key={answer.id}
           >
-            <Box color={"gray.400"} mb={"20px"}>
-              {answer.creator.username}
+            <Box minHeight={"50px"}>{answer.content}</Box>
+            <Box fontWeight={"bold"} color={"gray.300"}>
+              {new Date(answer.createdAt * 1000).toLocaleString()}
             </Box>
-            <Box minHeight={"100px"}>{answer.content}</Box>
           </Box>
         ))}
       </VStack>
+      <Divider borderColor={"gray.400"} mt={"40px"} mb={"40px"} />
+      <Box>
+        <Box ml={"10px"} mb={"10px"} fontWeight={"bold"} color={"gray.600"}>
+          Write your answer:
+        </Box>
+        <Textarea
+          borderRadius={"15px"}
+          boxShadow={"md"}
+          borderWidth={"1px"}
+          borderColor={"gray.300"}
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+        />
+        <Button
+          mt={"10px"}
+          w={"200px"}
+          h={"60px"}
+          borderRadius={"15px"}
+          boxShadow={"md"}
+          borderWidth={"1px"}
+          borderColor={"gray.200"}
+          onClick={() => postAnswer()}
+        >
+          Submit
+        </Button>
+      </Box>
     </Flex>
   );
 }
