@@ -1,4 +1,5 @@
 import {
+  Badge,
   Box,
   Button,
   Divider,
@@ -27,13 +28,9 @@ function QuestionComponent() {
   const [questionData, setQuestionData] = useState<Question>();
   const [answer, setAnswer] = useState<string>("");
 
-  console.log(questionId);
-
   const fetchQuestion = async () => {
     try {
       const result = await axios.get(`${SERVER_URL}/questions/${questionId!}`);
-
-      console.log(result.data);
 
       setQuestionData(result.data);
     } catch (e: unknown) {
@@ -50,9 +47,14 @@ function QuestionComponent() {
 
   const postAnswer = async () => {
     try {
+      const user = useUser.getState().user;
+
+      if (!user)
+        return toast({ status: "error", description: "User not selected" });
+
       await axios.post(`${SERVER_URL}/answers/`, {
         content: answer,
-        creatorId: useUser.getState().userId,
+        creatorId: user.value,
         parentQuestionId: questionId!,
       });
 
@@ -60,6 +62,7 @@ function QuestionComponent() {
         status: "success",
         description: "Answer added",
       });
+      setAnswer("");
     } catch (e: unknown) {
       toast({
         status: "error",
@@ -76,6 +79,11 @@ function QuestionComponent() {
       w={"1000px"}
       mx={"auto"}
     >
+      <Box>
+        <Badge variant="subtle" colorScheme="green">
+          {questionData?.category?.name}
+        </Badge>
+      </Box>
       <Box fontWeight={"bold"} color={"gray.300"}>
         {questionData &&
           new Date(questionData.createdAt * 1000).toLocaleString()}
@@ -109,6 +117,9 @@ function QuestionComponent() {
           >
             <Box minHeight={"50px"}>{answer.content}</Box>
             <Box fontWeight={"bold"} color={"gray.300"}>
+              {answer.creator.username}
+            </Box>
+            <Box fontWeight={"bold"} color={"gray.300"} fontSize={"small"}>
               {new Date(answer.createdAt * 1000).toLocaleString()}
             </Box>
           </Box>

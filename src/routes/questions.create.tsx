@@ -1,16 +1,11 @@
-import {
-  Box,
-  Button,
-  Input,
-  Textarea,
-  VStack,
-  useToast,
-} from "@chakra-ui/react";
+import { Box, Button, Textarea, VStack, useToast } from "@chakra-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { SERVER_URL } from "../config/url";
 import axios from "axios";
+import { useEffect, useState } from "react";
+import { Category } from "../types/types";
+import Select from "react-select";
 import { useUser } from "../useUser";
-import { useState } from "react";
 
 export const Route = createFileRoute("/questions/create")({
   component: QuestionCreationComponent,
@@ -19,14 +14,51 @@ export const Route = createFileRoute("/questions/create")({
 function QuestionCreationComponent() {
   const toast = useToast();
   const [question, setQuestion] = useState<string>("");
-  const [categoryId, setCategoryId] = useState<number>(1);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedOption, setSelectedOption] = useState();
+
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  //@ts-expect-error
+  const handleChange = (selectedOption) => {
+    setSelectedOption(selectedOption);
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const result = await axios.get(`${SERVER_URL}/categories/`);
+
+      setCategories(result.data);
+    } catch (e: unknown) {
+      toast({
+        status: "error",
+        description: JSON.stringify(e),
+      });
+    }
+  };
+
+  const options = categories.map((category) => ({
+    value: category.id.toString(),
+    label: category.name,
+  }));
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   const postQuestion = async () => {
     try {
+      if (!selectedOption)
+        return toast({ status: "error", description: "Category not selected" });
+
+      const user = useUser.getState().user;
+
+      if (!user)
+        return toast({ status: "error", description: "User not selected" });
+
       await axios.post(`${SERVER_URL}/questions/`, {
         content: question,
-        creatorId: useUser.getState().userId,
-        categoryId: categoryId,
+        creatorId: user.value,
+        categoryId: (selectedOption as { value: string; label: string }).value,
       });
 
       toast({
@@ -66,13 +98,18 @@ function QuestionCreationComponent() {
         <Box ml={"10px"} mb={"5px"} fontWeight={"bold"} color={"gray.600"}>
           Category ID
         </Box>
-        <Input
+        {/* <Input
           value={categoryId}
           onChange={(e) =>
             setCategoryId(
               isNaN(parseInt(e.target.value)) ? 1 : parseInt(e.target.value)
             )
           }
+        /> */}
+        <Select
+          value={selectedOption}
+          onChange={handleChange}
+          options={options}
         />
       </Box>
       <Button w={"full"} onClick={() => postQuestion()}>

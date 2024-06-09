@@ -1,9 +1,9 @@
 import { create } from "zustand";
 
 interface UserState {
-  userId: number;
+  user: { value: string; label: string } | undefined;
 }
 
 export const useUser = create<UserState>()(() => ({
-  userId: 1,
+  user: undefined,
 }));

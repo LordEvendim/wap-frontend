@@ -1,4 +1,4 @@
-import { Box, Flex, VStack, useToast } from "@chakra-ui/react";
+import { Badge, Box, Flex, VStack, useToast } from "@chakra-ui/react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SERVER_URL } from "../config/url";
@@ -46,13 +46,21 @@ function HomeComponent() {
             borderColor={"gray.300"}
             key={question.id}
           >
+            <Badge variant="subtle" colorScheme="green">
+              {question.category?.name}
+            </Badge>
             <Box fontWeight={"bold"} fontSize={"2xl"} color={"gray.700"}>
               {question.content}
             </Box>
             <Box color={"gray.300"} fontWeight={"bold"} mt={"10px"}>
               {question.creator.username}
             </Box>
-            <Box color={"gray.300"} fontWeight={"bold"} mb={"10px"}>
+            <Box
+              color={"gray.300"}
+              fontWeight={"bold"}
+              mb={"10px"}
+              fontSize={"small"}
+            >
               {new Date(question.createdAt * 1000).toLocaleString()}
             </Box>
             {/* <Box minHeight={"200px"}>{question.content}</Box> */}

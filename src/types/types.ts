@@ -16,6 +16,7 @@ export interface Answer {
   upvotes: number;
   createdAt: number;
   lastEdited: number;
+  creator: Creator;
 }
 
 export interface Category {
